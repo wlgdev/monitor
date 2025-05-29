@@ -7,18 +7,18 @@
   </a>
 </div>
 <h1 align="center">
-  REPOSITORY NAME
+  MONITOR
 </h1>
 
 <p align="center">
-   very short (1–2 lines) repository description
+   monitoring tools for applications
 </p>
 
 <div align="center">
-  📦 :octocat:
+  📦 :octocat: 🩺🖥️
 </div>
 <div align="center">
-  <img src="./docs/description.webp" alt="description"/>
+  <img src="./docs/tools.jpg" alt="description"/>
 </div>
 
 <!-- TABLE OF CONTENT -->
@@ -52,7 +52,10 @@
 <br>
 
 ## 📃 Description
-General information about repo
+This is a fool set of tools for all services that allows providing and monitoring metrics
+* https://monitor.wlg.tv - dashboard
+* https://loki.wlg.tv - logs endpoint
+* https://syslog.wlg.tv - logs endpoint(if loki not supported)
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 

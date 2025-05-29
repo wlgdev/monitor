@@ -1,0 +1,153 @@
+volumes:
+  data-storage-grafana:
+    driver: local
+    name: data-storage-grafana
+  data-storage-prometheus:
+    driver: local
+    name: data-storage-prometheus
+  data-storage-alert-manager:
+    driver: local
+    name: data-storage-alert-manager
+
+services:
+  log-generator: # FOR TESTING - DISABLE IN PROD
+    image: mingrammer/flog
+    command:
+      - --loop
+      - --format=json
+      - --number=10 # number of log lines to generate per second
+      - --delay=100ms # delay between log lines
+      - --output=/var/log/generated-logs.txt
+      - --overwrite
+      - --type=log
+    volumes:
+      - ./data/loki/:/var/log/
+    restart: unless-stopped
+
+  grafana: # MONITOR - user interface allowing to see all provided metrics
+    image: grafana/grafana:12.0.1
+    environment:
+      - GF_SERVER_DOMAIN=${DEFAULT_DOMAIN}
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_DISABLE_LOGIN_FORM=false
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./config/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+      - data-storage-grafana:/var/lib/grafana
+    restart: unless-stopped
+
+  loki-init:
+    image: &loki_image grafana/loki:3.5.1
+    user: root
+    entrypoint:
+      - "chown"
+      - "10001:10001"
+      - "/loki"
+    volumes:
+      - ./data/loki/:/loki
+
+  prometheus:
+    image: prom/prometheus:v3.4.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - data-storage-prometheus:/prometheus
+    command:
+      [
+        '--log.level=debug',
+        '--config.file=/etc/prometheus/prometheus.yml',
+        '--enable-feature=remote-write-receiver',
+        '--query.lookback-delta=30s'
+      ]
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:latest
+    volumes:
+      - ./config:/etc/promtail/
+      - ./data/loki/:/var/log/
+    command: -config.file=/etc/promtail/promtail.yaml
+    restart: unless-stopped
+
+  alert-manager: # enables receiving alerts
+    image: prom/alertmanager:v0.28.1
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./config:/config
+      - data-storage-alert-manager:/data
+    command: --config.file=/config/alertmanager.yml --log.level=debug
+    restart: unless-stopped
+
+  # =========================================== LOKI =========================================
+  loki: # LOKI - GATEWAY to push/read logs to the correct loki target
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./config/loki/settings/loki-gateway-nginx.conf:/etc/nginx/nginx.conf
+    restart: unless-stopped
+  loki-read: # used to READ logs from the filesystem
+    image: *loki_image
+    environment:
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
+      - S3_SECRET_KEY=${S3_SECRET_KEY}
+    volumes:
+      - ./config/loki/settings:/etc/loki
+    command:
+      - "-config.file=/etc/loki/loki.yml -target=read -legacy-read-mode=false"
+    restart: unless-stopped
+    deploy:
+      mode: replicated
+      replicas: 1
+  loki-write: # used to WRITE logs into filesystem
+    image: *loki_image
+    environment:
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
+      - S3_SECRET_KEY=${S3_SECRET_KEY}
+    volumes:
+      - ./config/loki/settings:/etc/loki
+    command:
+      - "-config.file=/etc/loki/loki.yml -target=write"
+    restart: unless-stopped
+    deploy:
+      mode: replicated
+      replicas: 1
+  loki-back: # used to PROCESS rules in the background
+    image: *loki_image
+    environment:
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
+      - S3_SECRET_KEY=${S3_SECRET_KEY}
+    volumes:
+      - ./config/loki/settings:/etc/loki
+      - ./config/loki/rules:/loki/rules:ro
+    command:
+      - "-config.file=/etc/loki/loki.yml -target=backend -legacy-read-mode=false"
+    restart: unless-stopped
+    deploy:
+      mode: replicated
+      replicas: 1
+
+  minio:
+    image: minio/minio:latest
+    entrypoint:
+      - sh
+      - -euc
+      - |
+        mkdir -p /data/loki-data && \
+        mkdir -p /data/loki-ruler &&
+        minio server --address "0.0.0.0:9000" --console-address "0.0.0.0:9001" /data
+    environment:
+      - MINIO_ROOT_USER=${S3_ACCESS_KEY}
+      - MINIO_ROOT_PASSWORD=${S3_SECRET_KEY}
+      - MINIO_PROMETHEUS_AUTH_TYPE=public
+      - MINIO_UPDATE=off
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - ./data/minio:/data
+    restart: unless-stopped
