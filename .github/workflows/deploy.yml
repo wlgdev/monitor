@@ -7,19 +7,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: deploy
-        uses: ./.github/actions/deploy/compose
-        with:
-          ssh_private_key: ${{ secrets.WLGDEV_SSH_PRIVATE_KEY }}
-          ssh_private_host: ${{ secrets.WLGDEV_SSH_PRIVATE_HOST }}
-          ssh_private_port: ${{ secrets.WLGDEV_SSH_PRIVATE_PORT }}
-          ssh_private_user: ${{ secrets.WLGDEV_SSH_PRIVATE_USER }}
-          delete_before_deploy:
-            ./src
-            ./docs
-          target:
-            monitor:grafana:3000
-          env:
-            DEFAULT_DOMAIN=monitor.wlg.tv
-            S3_ACCESS_KEY=${{ secrets.MONITOR_S3_ACCESS_KEY }}
-            S3_SECRET_KEY=${{ secrets.MONITOR_S3_SECRET_KEY }}
+#      - name: deploy
+#        uses: ./.github/actions/deploy/compose
+#        with:
+#          ssh_private_key: ${{ secrets.WLGDEV_SSH_PRIVATE_KEY }}
+#          ssh_private_host: ${{ secrets.WLGDEV_SSH_PRIVATE_HOST }}
+#          ssh_private_port: ${{ secrets.WLGDEV_SSH_PRIVATE_PORT }}
+#          ssh_private_user: ${{ secrets.WLGDEV_SSH_PRIVATE_USER }}
+#          delete_before_deploy:
+#            ./src
+#            ./docs
+#          target:
+#            monitor:grafana:3000
+#          env:
+#            DEFAULT_DOMAIN=monitor.wlg.tv
+#            S3_ACCESS_KEY=${{ secrets.MONITOR_S3_ACCESS_KEY }}
+#            S3_SECRET_KEY=${{ secrets.MONITOR_S3_SECRET_KEY }}
