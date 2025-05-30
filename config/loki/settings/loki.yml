@@ -1,4 +1,7 @@
-auth_enabled: true
+# if auth_enabled = true: then push/read logs required to have header: X-Scope-OrgID
+# which specifies for which organization logs are corresponding to (for multi-tenant isolation)
+# or to create an authentication mechanism from where this header will be populated
+auth_enabled: false
 
 server:
   http_listen_address: 0.0.0.0
@@ -17,8 +20,8 @@ storage_config:
     endpoint: minio:9000
     insecure: true
     bucketnames: loki-data
-    access_key_id: ${S3_ACCESS_KEY}
-    secret_access_key: ${S3_SECRET_KEY}
+    access_key_id: loki
+    secret_access_key: supersecret
     s3forcepathstyle: true
 
 memberlist:
@@ -35,7 +38,7 @@ ingester:
     join_after: 10s
     observe_period: 5s
     ring:
-      replication_factor: 3
+      replication_factor: 1
       kvstore:
         store: memberlist
     final_sleep: 0s

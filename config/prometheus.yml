@@ -14,9 +14,9 @@ scrape_configs:
           - loki-back
         type: A
         port: 3100
-  - job_name: 'promtail'
-    dns_sd_configs:
-      - names:
-          - promtail
-        type: A
-        port: 9080
+#  - job_name: 'promtail'
+#    dns_sd_configs:
+#      - names:
+#          - promtail
+#        type: A
+#        port: 9080
