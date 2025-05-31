@@ -16,6 +16,8 @@ services:
     volumes:
       - ./config/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
       - data-storage-grafana:/var/lib/grafana
+    labels:
+      - "promtail.enabled=true"
     restart: unless-stopped
     depends_on:
       - loki
@@ -37,22 +39,22 @@ services:
       ]
     restart: unless-stopped
 
-#  promtail:
-#    image: grafana/promtail:3.5.1
-#    ports:
-#      - "1514:1514"
-#    user: root
-#    volumes:
-#      - ./config/promtail.yml:/etc/promtail/promtail.yml
-#      - ./data/promtail:/tmp
-#      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-#      - /var/run/docker.sock:/var/run/docker.sock
-#      - /etc/machine-id:/etc/machine-id:ro
-#    command:
-#      - "-config.file=/etc/promtail/promtail.yml"
-#    restart: unless-stopped
-#    depends_on:
-#      - loki
+  promtail:
+    image: grafana/promtail:3.5.1
+    ports:
+      - "1514:1514"
+    user: root
+    volumes:
+      - ./config/promtail.yml:/etc/promtail/promtail.yml
+      - ./data/promtail:/tmp
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/machine-id:/etc/machine-id:ro
+    command:
+      - "-config.file=/etc/promtail/promtail.yml"
+    restart: unless-stopped
+    depends_on:
+      - loki
 
 #  alert-manager: # enables receiving alerts
 #    image: prom/alertmanager:v0.28.1
