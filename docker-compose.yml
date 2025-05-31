@@ -3,9 +3,6 @@ volumes:
   data-storage-loki:
   data-storage-prometheus:
 
-networks:
-  monitor-loki-network:
-
 services:
   grafana: # MONITOR - user interface allowing to see all metrics
     image: grafana/grafana:12.0.1
@@ -19,8 +16,6 @@ services:
     volumes:
       - ./config/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
       - data-storage-grafana:/var/lib/grafana
-#    networks:
-#      - monitor-loki-network
     restart: unless-stopped
     depends_on:
       - loki
@@ -42,22 +37,22 @@ services:
       ]
     restart: unless-stopped
 
-  promtail:
-    image: grafana/promtail:3.5.1
-    ports:
-      - "1514:1514"
-    user: root
-    volumes:
-      - ./config/promtail.yml:/etc/promtail/promtail.yml
-      - ./data/promtail:/tmp
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /etc/machine-id:/etc/machine-id:ro
-    command:
-      - "-config.file=/etc/promtail/promtail.yml"
-    restart: unless-stopped
-    depends_on:
-      - loki
+#  promtail:
+#    image: grafana/promtail:3.5.1
+#    ports:
+#      - "1514:1514"
+#    user: root
+#    volumes:
+#      - ./config/promtail.yml:/etc/promtail/promtail.yml
+#      - ./data/promtail:/tmp
+#      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+#      - /var/run/docker.sock:/var/run/docker.sock
+#      - /etc/machine-id:/etc/machine-id:ro
+#    command:
+#      - "-config.file=/etc/promtail/promtail.yml"
+#    restart: unless-stopped
+#    depends_on:
+#      - loki
 
 #  alert-manager: # enables receiving alerts
 #    image: prom/alertmanager:v0.28.1
@@ -77,8 +72,6 @@ services:
       - "3100:3100"
     volumes:
       - ./config/loki/settings/loki-gateway-nginx.conf:/etc/nginx/nginx.conf
-#    networks:
-#      - monitor-loki-network
     restart: unless-stopped
     depends_on:
       - loki-read
@@ -90,8 +83,6 @@ services:
       dockerfile: ./config/loki/Dockerfile
     volumes:
       - ./config/loki/settings/loki.yml:/etc/loki/loki.yml:ro
-#    networks:
-#      - monitor-loki-network
     command:
       - "-config.file=/etc/loki/loki.yml"
       - "-target=read"
@@ -108,8 +99,6 @@ services:
       dockerfile: ./config/loki/Dockerfile
     volumes:
       - ./config/loki/settings/loki.yml:/etc/loki/loki.yml:ro
-#    networks:
-#      - monitor-loki-network
     command:
       - "-config.file=/etc/loki/loki.yml"
       - "-target=write"
@@ -126,8 +115,6 @@ services:
     volumes:
       - ./config/loki/settings/loki.yml:/etc/loki/loki.yml:ro
       - ./config/loki/rules:/loki/rules:ro
-#    networks:
-#      - monitor-loki-network
     command:
       - "-config.file=/etc/loki/loki.yml"
       - "-target=backend"
@@ -159,6 +146,4 @@ services:
       - "9001:9001"
     volumes:
       - ./data/minio:/data
-#    networks:
-#      - monitor-loki-network
     restart: unless-stopped
