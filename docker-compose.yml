@@ -11,6 +11,9 @@ services:
     image: grafana/grafana:12.0.1
     environment:
       GF_SERVER_DOMAIN: "monitor.wlg.tv"
+      GF_AUTH_ANONYMOUS_ENABLED: true
+      GF_AUTH_DISABLE_LOGIN_FORM: false
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
     ports:
       - "3000:3000"
     volumes:
@@ -55,6 +58,16 @@ services:
     restart: unless-stopped
     depends_on:
       - loki
+
+#  alert-manager: # enables receiving alerts
+#    image: prom/alertmanager:v0.28.1
+#    ports:
+#      - "9093:9093"
+#    volumes:
+#      - ./config:/config
+#      - data-storage-alert-manager:/data
+#    command: --config.file=/config/alertmanager.yml --log.level=debug
+#    restart: unless-stopped
 
   # =========================================== LOKI =========================================
   loki: # LOKI - GATEWAY to push/read logs to loki instances
