@@ -32,7 +32,7 @@ services:
       - data-storage-prometheus:/prometheus
     command:
       [
-        '--log.level=debug',
+        '--log.level=info',
         '--config.file=/etc/prometheus/prometheus.yml',
         '--enable-feature=remote-write-receiver',
         '--query.lookback-delta=30s'
