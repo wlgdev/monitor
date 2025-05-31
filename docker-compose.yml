@@ -10,7 +10,7 @@ services:
   grafana: # MONITOR - user interface allowing to see all metrics
     image: grafana/grafana:12.0.1
     environment:
-      GF_SERVER_DOMAIN: "monitor.wlg.tv"
+      GF_SERVER_DOMAIN: ${GRAFANA_DEFAULT_DOMAIN}
       GF_AUTH_ANONYMOUS_ENABLED: true
       GF_AUTH_DISABLE_LOGIN_FORM: false
       GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
