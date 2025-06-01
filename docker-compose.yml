@@ -66,6 +66,22 @@ services:
 #    command: --config.file=/config/alertmanager.yml --log.level=debug
 #    restart: unless-stopped
 
+  # ========================================== SCRAPPERS =====================================
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - "/:/rootfs:ro"
+      - "/var/run:/var/run:ro"
+      - "/sys:/sys:ro"
+      - "/var/lib/docker/:/var/lib/docker:ro"
+      - "/dev/disk/:/dev/disk:ro"
+    privileged: true
+    devices:
+      - "/dev/kmsg"
+    restart: unless-stopped
+
   # =========================================== LOKI =========================================
   loki: # LOKI - GATEWAY to push/read logs to loki instances
     image: nginx:latest
