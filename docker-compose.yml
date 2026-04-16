@@ -32,10 +32,10 @@ services:
       - data-storage-prometheus:/prometheus
     command:
       [
-        '--log.level=info',
-        '--config.file=/etc/prometheus/prometheus.yml',
-        '--enable-feature=remote-write-receiver',
-        '--query.lookback-delta=30s'
+        "--log.level=info",
+        "--config.file=/etc/prometheus/prometheus.yml",
+        "--enable-feature=remote-write-receiver",
+        "--query.lookback-delta=30s",
       ]
     restart: unless-stopped
 
@@ -56,15 +56,28 @@ services:
     depends_on:
       - loki
 
-#  alert-manager: # enables receiving alerts
-#    image: prom/alertmanager:v0.28.1
-#    ports:
-#      - "9093:9093"
-#    volumes:
-#      - ./config:/config
-#      - data-storage-alert-manager:/data
-#    command: --config.file=/config/alertmanager.yml --log.level=debug
-#    restart: unless-stopped
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.150.0
+    command: ["--config=/etc/otel-collector-config.yml"]
+    volumes:
+      - ./config/otel-collector.yml:/etc/otel-collector-config.yml:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+      - loki
+
+  #  alert-manager: # enables receiving alerts
+  #    image: prom/alertmanager:v0.28.1
+  #    ports:
+  #      - "9093:9093"
+  #    volumes:
+  #      - ./config:/config
+  #      - data-storage-alert-manager:/data
+  #    command: --config.file=/config/alertmanager.yml --log.level=debug
+  #    restart: unless-stopped
 
   # ========================================== SCRAPPERS =====================================
   cadvisor:
