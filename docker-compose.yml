@@ -35,6 +35,7 @@ services:
         "--log.level=info",
         "--config.file=/etc/prometheus/prometheus.yml",
         "--enable-feature=remote-write-receiver",
+        "--web.enable-remote-write-receiver",
         "--query.lookback-delta=30s",
       ]
     restart: unless-stopped
