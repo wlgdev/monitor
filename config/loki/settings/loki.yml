@@ -22,7 +22,6 @@ limits_config:
   retention_period: 336h        # keep logs for 14 days
   ingestion_rate_mb: 8          # max sustained ingestion per second
   ingestion_burst_size_mb: 16   # short bursts allowed above limit
-limits_config:
   max_query_lookback: 336h      # dont look back more then retention_period
   
 compactor:
