@@ -1,13 +1,12 @@
 volumes:
-  data-storage-grafana:
-  data-storage-loki:
-  data-storage-prometheus:
+  monitor-grafana-data:
+  monitor-loki-data:
 
 services:
-  grafana: # MONITOR - user interface allowing to see all metrics
-    image: grafana/grafana:12.0.1
+  grafana:
+    image: grafana/grafana:13.2-slim
     environment:
-      GF_SERVER_DOMAIN: ${GRAFANA_DEFAULT_DOMAIN}
+      GF_SERVER_DOMAIN: ${GRAFANA_DEFAULT_DOMAIN:?Set GRAFANA_DEFAULT_DOMAIN}
       GF_AUTH_ANONYMOUS_ENABLED: true
       GF_AUTH_DISABLE_LOGIN_FORM: false
       GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
@@ -15,166 +14,18 @@ services:
       - "3000:3000"
     volumes:
       - ./config/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
-      - data-storage-grafana:/var/lib/grafana
-    labels:
-      - "promtail.enabled=true"
-    restart: unless-stopped
-    depends_on:
-      - loki
-      - prometheus
-
-  prometheus:
-    image: prom/prometheus:v3.4.0
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
-      - data-storage-prometheus:/prometheus
-    command:
-      [
-        "--log.level=info",
-        "--config.file=/etc/prometheus/prometheus.yml",
-        "--web.enable-remote-write-receiver",
-        "--query.lookback-delta=30s",
-      ]
-    restart: unless-stopped
-
-  promtail:
-    image: grafana/promtail:3.5.1
-    ports:
-      - "1514:1514"
-    user: root
-    volumes:
-      - ./config/promtail.yml:/etc/promtail/promtail.yml
-      - ./data/promtail:/tmp
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /etc/machine-id:/etc/machine-id:ro
-    command:
-      - "-config.file=/etc/promtail/promtail.yml"
+      - monitor-grafana-data:/var/lib/grafana
     restart: unless-stopped
     depends_on:
       - loki
 
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:latest
-    command: ["--config=/etc/otel-collector-config.yml"]
-    volumes:
-      - ./config/otel-collector.yml:/etc/otel-collector-config.yml:ro
+  loki:
+    image: grafana/loki:3.7
     ports:
-      - "4317:4317"
-      - "4318:4318"
-    restart: unless-stopped
-    depends_on:
-      - prometheus
-      - loki
-
-  #  alert-manager: # enables receiving alerts
-  #    image: prom/alertmanager:v0.28.1
-  #    ports:
-  #      - "9093:9093"
-  #    volumes:
-  #      - ./config:/config
-  #      - data-storage-alert-manager:/data
-  #    command: --config.file=/config/alertmanager.yml --log.level=debug
-  #    restart: unless-stopped
-
-  # ========================================== SCRAPPERS =====================================
-  cadvisor:
-    image: gcr.io/cadvisor/cadvisor:latest
-    ports:
-      - "8080:8080"
-    volumes:
-      - "/:/rootfs:ro"
-      - "/var/run:/var/run:ro"
-      - "/sys:/sys:ro"
-      - "/var/lib/docker/:/var/lib/docker:ro"
-      - "/dev/disk/:/dev/disk:ro"
-    privileged: true
-    devices:
-      - "/dev/kmsg"
-    restart: unless-stopped
-
-  # =========================================== LOKI =========================================
-  loki: # LOKI - GATEWAY to push/read logs to loki instances
-    image: nginx:latest
-    ports:
-      - "80:80"
-      - "3100:3100"
-    volumes:
-      - ./config/loki/settings/loki-gateway-nginx.conf:/etc/nginx/nginx.conf
-    restart: unless-stopped
-    depends_on:
-      - loki-read
-      - loki-write
-
-  loki-read: # used to READ logs from the filesystem
-    build:
-      context: .
-      dockerfile: ./config/loki/Dockerfile
-    volumes:
-      - ./config/loki/settings/loki.yml:/etc/loki/loki.yml:ro
+      - "127.0.0.1:3100:3100"
     command:
       - "-config.file=/etc/loki/loki.yml"
-      - "-target=read"
-      - "-legacy-read-mode=false"
-    restart: unless-stopped
-    depends_on:
-      - loki-back
-    deploy:
-      mode: replicated
-      replicas: 1
-  loki-write: # used to WRITE logs into filesystem
-    build:
-      context: .
-      dockerfile: ./config/loki/Dockerfile
     volumes:
-      - ./config/loki/settings/loki.yml:/etc/loki/loki.yml:ro
-    command:
-      - "-config.file=/etc/loki/loki.yml"
-      - "-target=write"
-    restart: unless-stopped
-    depends_on:
-      - loki-back
-    deploy:
-      mode: replicated
-      replicas: 1
-  loki-back: # used to PROCESS rules in the background
-    build:
-      context: .
-      dockerfile: ./config/loki/Dockerfile
-    volumes:
-      - ./config/loki/settings/loki.yml:/etc/loki/loki.yml:ro
-      - ./config/loki/rules:/loki/rules:ro
-    command:
-      - "-config.file=/etc/loki/loki.yml"
-      - "-target=backend"
-      - "-legacy-read-mode=false"
-    restart: unless-stopped
-    depends_on:
-      - minio
-      - prometheus
-    deploy:
-      mode: replicated
-      replicas: 1
-
-  minio:
-    image: minio/minio:latest
-    entrypoint:
-      - sh
-      - -euc
-      - |
-        mkdir -p /data/loki-data && \
-        mkdir -p /data/loki-ruler &&
-        minio server --address "0.0.0.0:9000" --console-address "0.0.0.0:9001" /data
-    environment:
-      - MINIO_ROOT_USER=loki
-      - MINIO_ROOT_PASSWORD=supersecret
-      - MINIO_PROMETHEUS_AUTH_TYPE=public
-      - MINIO_UPDATE=off
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    volumes:
-      - ./data/minio:/data
+      - ./config/loki/loki.yml:/etc/loki/loki.yml:ro
+      - monitor-loki-data:/loki
     restart: unless-stopped
