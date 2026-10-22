@@ -5,7 +5,7 @@ server:
   log_level: info           # normal logging verbosity
 
 common:
-  path_prefix: /loki        # where Loki stores all internal files
+  path_prefix: /loki        # root directory for all Loki data
   replication_factor: 1     # single-node instance, no replicas
 
 schema_config:
@@ -13,38 +13,33 @@ schema_config:
     - from: 2024-01-01          # schema active from this date
       store: tsdb               # modern storage engine
       object_store: filesystem  # store data on local disk
-      schema: v13               # latest stable schema
+      schema: v13               # current stable schema
       index:
         prefix: index_          # prefix for generated index files
         period: 24h             # create new index every day
 
-storage_config:
-  filesystem:
-    chunks_directory: /loki/chunks    # compressed log chunks
-    rules_directory: /loki/rules      # alerting/ruler files
-
 limits_config:
-  retention_period: 336h          # keep logs for 14 days
-  ingestion_rate_mb: 8            # max sustained ingestion per second
-  ingestion_burst_size_mb: 16     # temporary burst allowance
-chunk_store_config:
-  max_look_back_period: 336h      # don't search beyond retention
-
+  retention_period: 336h        # keep logs for 14 days
+  ingestion_rate_mb: 8          # max sustained ingestion per second
+  ingestion_burst_size_mb: 16   # short bursts allowed above limit
+limits_config:
+  max_query_lookback: 336h      # dont look back more then retention_period
+  
 compactor:
-  working_directory: /loki/compactor    # temporary compaction workspace
-  retention_enabled: true               # actually delete expired logs
+  working_directory: /loki/compactor    # compaction workspace
+  retention_enabled: true               # enable automatic deletion
   retention_delete_delay: 2h            # wait before deleting old data
   delete_request_store: filesystem      # store delete requests locally
 
 ingester:
   wal:
-    enabled: true       # crash recovery protection
-    dir: /loki/wal      # write-ahead-log location
+    enabled: true             # enable write-ahead logging
+    dir: /loki/wal            # location of WAL files
 
 ruler:
   storage:
-    type: local                   # local storage for alert rules
+    type: local               # local filesystem storage
     local:
-      directory: /loki/rules      # rules location
-  rule_path: /loki/rules-temp     # temp rule processing directory
-  enable_api: true                # allows managing rules via API
+      directory: /loki/rules  # alerting rules location
+  rule_path: /loki/rules-temp # temporary rule processing directory
+  enable_api: true            # allow rule management via HTTP API
