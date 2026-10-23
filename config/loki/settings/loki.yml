@@ -8,6 +8,10 @@ common:
   path_prefix: /loki        # root directory for all Loki data
   replication_factor: 1     # single-node instance, no replicas
 
+  ring:
+    kvstore:
+      store: inmemory
+
 schema_config:
   configs:
     - from: 2024-01-01          # schema active from this date
@@ -23,7 +27,8 @@ limits_config:
   ingestion_rate_mb: 8          # max sustained ingestion per second
   ingestion_burst_size_mb: 16   # short bursts allowed above limit
   max_query_lookback: 336h      # dont look back more then retention_period
-  
+  volume_enabled: true
+
 compactor:
   working_directory: /loki/compactor    # compaction workspace
   retention_enabled: true               # enable automatic deletion
