@@ -1,5 +1,8 @@
 auth_enabled: false         # disable tenants/auth, simpler single-user setup
 
+analytics:
+  reporting_enabled: false  # don't send anonymous usage stats to Grafana Labs
+
 server:
   http_listen_port: 3100    # Loki API port
   log_level: info           # normal logging verbosity
@@ -7,6 +10,11 @@ server:
 common:
   path_prefix: /loki        # root directory for all Loki data
   replication_factor: 1     # single-node instance, no replicas
+
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
 
   ring:
     kvstore:
